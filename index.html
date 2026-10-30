@@ -89,17 +89,22 @@
     (() => {
       const SAVE_KEY = 'jeff-clicker-save-v2';
       const SHOP = [
-        { id:'cursor',  name:'Sharpened pencil',    base:15,      rate:1 },
-        { id:'cousin',  name:'Front-row student',   base:50,      rate:3 },
-        { id:'finger',  name:'Fresh chalk',         base:100,     click:1, grow:1.5 },
-        { id:'oven',    name:'Overhead projector',  base:120,     rate:8 },
-        { id:'mom',     name:'Pop quiz',            base:400,     rate:20 },
-        { id:'factory', name:'Textbook chapter',    base:850,     rate:45 },
-        { id:'movie',   name:'Watch movie',         base:2000,    rate:100, extra:'lights off' },
-        { id:'bakery',  name:'Study group',         base:7000,    rate:350 },
-        { id:'farm',    name:'Museum field trip',   base:25000,   rate:1300 },
-        { id:'lab',     name:'DBQ packet',          base:90000,   rate:5000 },
-        { id:'portal',  name:'Final exam review',   base:400000,  rate:22000 },
+        { id:'cursor',  name:'Sharpened pencil',      base:15,      rate:1 },
+        { id:'cousin',  name:'Front-row student',     base:50,      rate:3 },
+        { id:'finger',  name:'Fresh chalk',           base:100,     click:1, grow:1.5 },
+        { id:'oven',    name:'Overhead projector',    base:120,     rate:8 },
+        { id:'mom',     name:'Pop quiz',              base:400,     rate:20 },
+        { id:'chalk2',  name:'Colored chalk',         base:500,     click:3, grow:1.4 },
+        { id:'factory', name:'Textbook chapter',      base:850,     rate:45 },
+        { id:'movie',   name:'Watch movie',           base:2000,    rate:100, extra:'lights off' },
+        { id:'mimeo',   name:'Mimeograph machine',    base:2500,    click:10, grow:1.4 },
+        { id:'bakery',  name:'Study group',           base:7000,    rate:350 },
+        { id:'laser',   name:'Laser pointer',         base:12000,   click:40, grow:1.4 },
+        { id:'farm',    name:'Museum field trip',     base:25000,   rate:1300 },
+        { id:'smart',   name:'Smartboard',            base:60000,   click:180, grow:1.4 },
+        { id:'lab',     name:'DBQ packet',            base:90000,   rate:5000 },
+        { id:'edition', name:'Teacher’s edition',     base:300000,  click:900, grow:1.4 },
+        { id:'portal',  name:'Final exam review',     base:400000,  rate:22000 },
         { id:'planet',  name:'AP History curriculum', base:2000000, rate:120000 }
       ];
 
@@ -118,7 +123,7 @@
       const rows = SHOP.map(u => {
         const b = document.createElement('button');
         b.className = 'row';
-        const desc = (u.click ? `+${u.click} note per click` : `+${format(u.rate)} note${u.rate > 1 ? 's' : ''} per second`) + (u.extra ? ', ' + u.extra : '');
+        const desc = (u.click ? `+${format(u.click)} note${u.click > 1 ? 's' : ''} per click` : `+${format(u.rate)} note${u.rate > 1 ? 's' : ''} per second`) + (u.extra ? ', ' + u.extra : '');
         b.innerHTML = `<span class="line"><span class="name">${u.name}</span><span class="own"></span><span class="dots"></span><span class="cost"></span></span><span class="desc">${desc}</span>`;
         b.addEventListener('click', () => {
           const price = cost(u);
