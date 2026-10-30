@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jeff Clicker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Patrick+Hand&display=swap" rel="stylesheet">
+  <style>
+    :root { --ink:#3a2418; --jam:#c8283b; --butter:#f6d365; --chalk:#f1efe6; --board:#26372f; --wood:#9b6a38; }
+    * { box-sizing:border-box; }
+    [hidden] { display:none !important; }
+    body {
+      margin:0; min-height:100vh; color:var(--ink);
+      background-color:#e8dbbd;
+      background-image:linear-gradient(90deg,transparent 47px,rgba(200,40,59,.4) 47px,rgba(200,40,59,.4) 49px,transparent 49px),repeating-linear-gradient(transparent 0 31px,rgba(120,90,50,.22) 31px 32px);
+      background-position:0 0,0 14px;
+      font:20px/1.3 "Patrick Hand","Comic Sans MS",cursive,sans-serif;
+    }
+    .wrap { width:min(1000px,calc(100% - 32px)); margin:0 auto; padding:22px 0 48px; }
+    .top { display:flex; justify-content:flex-end; align-items:center; gap:14px; flex-wrap:wrap; }
+    .account { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .account small { font-size:17px; }
+    .tag { font:inherit; color:var(--ink); background:#fff; border:2px solid var(--ink); border-radius:8px; padding:5px 12px; box-shadow:2px 2px 0 var(--ink); cursor:pointer; }
+    .tag:active { transform:translate(2px,2px); box-shadow:none; }
+    .stage { display:grid; grid-template-columns:minmax(0,1fr); gap:30px; margin-top:20px; align-items:start; }
+    @media (min-width:820px) { .stage { grid-template-columns:minmax(0,1fr) minmax(330px,400px); } }
+    .bake { text-align:center; }
+    .count { font:400 clamp(48px,10vw,88px)/1 "Bagel Fat One",Impact,sans-serif; text-shadow:0 3px 0 #fff; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+    .unit { margin:4px 0 0; font-size:26px; }
+    .rate { margin:2px 0 0; font-size:20px; }
+    .cookie { display:block; width:min(340px,70vw); aspect-ratio:1; margin:22px auto 0; padding:0; border:0; border-radius:50%; background:none; cursor:pointer; filter:drop-shadow(0 10px 0 rgba(58,36,24,.18)); transition:transform .09s; }
+    .cookie:hover { transform:rotate(-3deg) scale(1.03); }
+    .cookie:active { transform:scale(.93); }
+    .cookie img { display:block; width:100%; height:100%; object-fit:contain; border-radius:50%; user-select:none; -webkit-user-drag:none; }
+    .board { color:var(--chalk); padding:18px 18px 12px; border:14px solid var(--wood); border-radius:6px; background:radial-gradient(ellipse at 25% 10%,rgba(255,255,255,.08),transparent 60%),var(--board); box-shadow:inset 0 0 0 3px #7a5129,0 8px 0 rgba(58,36,24,.2); transform:rotate(.6deg); }
+    .board h2 { margin:0 0 8px; font-weight:400; font-size:30px; }
+    .row { display:block; width:100%; padding:8px 6px; color:inherit; font:inherit; text-align:left; background:none; border:0; border-radius:4px; cursor:pointer; }
+    .row:hover:not(:disabled) { background:rgba(255,255,255,.09); }
+    .row:disabled { cursor:not-allowed; opacity:.4; }
+    .line { display:flex; align-items:baseline; }
+    .name { font-size:22px; }
+    .own { margin-left:8px; color:var(--butter); }
+    .dots { flex:1; min-width:16px; margin:0 8px; border-bottom:2px dotted rgba(241,239,230,.45); transform:translateY(-4px); }
+    .cost { color:var(--butter); font-size:22px; }
+    .desc { display:block; font-size:17px; opacity:.7; }
+    .pop { position:fixed; z-index:9; pointer-events:none; color:var(--jam); font:400 28px/1 "Bagel Fat One",Impact,sans-serif; text-shadow:2px 2px 0 #fff; transform:translate(-50%,-50%); animation:rise .85s ease-out forwards; }
+    @keyframes rise { to { transform:translate(-50%,-150px); opacity:0; } }
+    :focus-visible { outline:3px solid var(--jam); outline-offset:3px; }
+    @media (prefers-reduced-motion:reduce) { .pop { animation:none; } .cookie { transition:none; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div class="account" id="account" hidden>
+        <button class="tag" id="signin">Sign in with Google to save your notes</button>
+        <span id="who" hidden><span id="name"></span> <button class="tag" id="signout">Sign out</button></span>
+        <small id="status">Saved on this device only</small>
+      </div>
+    </header>
+
+    <main class="stage">
+      <section class="bake">
+        <div class="count" id="count">0</div>
+        <p class="unit">notes handed out</p>
+        <p class="rate"><span id="perSecond">0</span> per second, <span id="perClick">1</span> per click</p>
+        <button class="cookie" id="cookie" aria-label="Click Jeff to hand out notes"><img src="jeff.png" alt="Jeff, the history teacher"></button>
+      </section>
+
+      <section class="board" aria-labelledby="boardTitle">
+        <h2 id="boardTitle">Upgrades</h2>
+        <div id="shop"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    /* Cloud saves: paste your Firebase web app config here (Firebase console > Project settings).
+       Leave the YOUR_ values alone and the game runs with local saves only. */
+    const firebaseConfig = {
+      apiKey: 'YOUR_API_KEY',
+      authDomain: 'YOUR_PROJECT.firebaseapp.com',
+      projectId: 'YOUR_PROJECT',
+      appId: 'YOUR_APP_ID'
+    };
+
+    (() => {
+      const SAVE_KEY = 'jeff-clicker-save-v2';
+      const SHOP = [
+        { id:'cursor',  name:'Sharpened pencil',    base:15,      rate:1 },
+        { id:'cousin',  name:'Front-row student',   base:50,      rate:3 },
+        { id:'finger',  name:'Fresh chalk',         base:100,     click:1, grow:1.5 },
+        { id:'oven',    name:'Overhead projector',  base:120,     rate:8 },
+        { id:'mom',     name:'Pop quiz',            base:400,     rate:20 },
+        { id:'factory', name:'Textbook chapter',    base:850,     rate:45 },
+        { id:'movie',   name:'Watch movie',         base:2000,    rate:100, extra:'lights off' },
+        { id:'bakery',  name:'Study group',         base:7000,    rate:350 },
+        { id:'farm',    name:'Museum field trip',   base:25000,   rate:1300 },
+        { id:'lab',     name:'DBQ packet',          base:90000,   rate:5000 },
+        { id:'portal',  name:'Final exam review',   base:400000,  rate:22000 },
+        { id:'planet',  name:'AP History curriculum', base:2000000, rate:120000 }
+      ];
+
+      const $ = id => document.getElementById(id);
+      const format = n => { n = Math.floor(n); return n < 1e9 ? n.toLocaleString() : n.toExponential(2).replace('+', ''); };
+      const owned = u => state[u.id + 'Owned'] || 0;
+      const cost = u => Math.ceil(u.base * Math.pow(u.grow || 1.15, owned(u)));
+      const income = () => SHOP.reduce((t, u) => t + (u.rate || 0) * owned(u), 0);
+      const power = () => 1 + SHOP.reduce((t, u) => t + (u.click || 0) * owned(u), 0);
+      const load = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch { return {}; } };
+      const save = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch {} };
+
+      let state = { jeffs:0, total:0, ...load() };
+      if (!state.total) state.total = state.jeffs;
+
+      const rows = SHOP.map(u => {
+        const b = document.createElement('button');
+        b.className = 'row';
+        const desc = (u.click ? `+${u.click} note per click` : `+${format(u.rate)} note${u.rate > 1 ? 's' : ''} per second`) + (u.extra ? ', ' + u.extra : '');
+        b.innerHTML = `<span class="line"><span class="name">${u.name}</span><span class="own"></span><span class="dots"></span><span class="cost"></span></span><span class="desc">${desc}</span>`;
+        b.addEventListener('click', () => {
+          const price = cost(u);
+          if (state.jeffs < price) return;
+          state.jeffs -= price;
+          state[u.id + 'Owned'] = owned(u) + 1;
+          render(); save();
+        });
+        $('shop').append(b);
+        return { u, b, own:b.querySelector('.own'), cost:b.querySelector('.cost') };
+      });
+
+      function render() {
+        $('count').textContent = format(state.jeffs);
+        $('perSecond').textContent = format(income());
+        $('perClick').textContent = format(power());
+        rows.forEach(r => {
+          const n = owned(r.u);
+          r.b.disabled = state.jeffs < cost(r.u);
+          r.own.textContent = n ? '×' + n : '';
+          r.cost.textContent = format(cost(r.u));
+        });
+      }
+
+      function pop(e, amount) {
+        const box = $('cookie').getBoundingClientRect();
+        const s = document.createElement('span');
+        s.className = 'pop';
+        s.textContent = '+' + format(amount);
+        s.style.left = (e.detail ? e.clientX : box.left + box.width / 2) + 'px';
+        s.style.top = (e.detail ? e.clientY : box.top + box.height / 2) + 'px';
+        document.body.append(s);
+        setTimeout(() => s.remove(), 900);
+      }
+
+      $('cookie').addEventListener('click', e => {
+        const p = power();
+        state.jeffs += p; state.total += p;
+        pop(e, p); render(); save();
+      });
+
+      setInterval(() => {
+        const earned = income() / 10;
+        if (!earned) return;
+        state.jeffs += earned; state.total += earned;
+        render();
+      }, 100);
+
+      /* ---------- Google sign-in and cloud save (Firebase) ---------- */
+      let cloud = null;
+      const setStatus = text => { $('status').textContent = text; };
+
+      async function initCloud() {
+        if (firebaseConfig.apiKey.startsWith('YOUR_')) return;
+        try {
+          const base = 'https://www.gstatic.com/firebasejs/10.14.1/';
+          const [app, auth, store] = await Promise.all(['app', 'auth', 'firestore'].map(n => import(base + 'firebase-' + n + '.js')));
+          const a = app.initializeApp(firebaseConfig);
+          cloud = { A:auth, S:store, auth:auth.getAuth(a), db:store.getFirestore(a), user:null };
+          $('account').hidden = false;
+          auth.onAuthStateChanged(cloud.auth, onUser);
+        } catch (err) { console.warn('Cloud saves unavailable', err); }
+      }
+
+      async function onUser(user) {
+        cloud.user = user;
+        $('signin').hidden = !!user;
+        $('who').hidden = !user;
+        if (!user) { setStatus('Saved on this device only'); return; }
+        $('name').textContent = user.displayName || 'Signed in';
+        try {
+          const snap = await cloud.S.getDoc(cloud.S.doc(cloud.db, 'saves', user.uid));
+          const remote = snap.exists() ? snap.data() : null;
+          if (remote && (remote.total || 0) > state.total) {
+            state = { jeffs:0, total:0, ...remote };
+            render(); save();
+            setStatus('Loaded your saved notes');
+          } else {
+            await pushCloud();
+          }
+        } catch (err) { console.warn(err); setStatus('Could not reach your cloud save'); }
+      }
+
+      async function pushCloud() {
+        if (!cloud || !cloud.user) return;
+        try {
+          await cloud.S.setDoc(cloud.S.doc(cloud.db, 'saves', cloud.user.uid), { ...state, updated:Date.now() });
+          setStatus('Saved to your Google account');
+        } catch (err) { console.warn(err); setStatus('Cloud save failed, still saved on this device'); }
+      }
+
+      $('signin').addEventListener('click', () => {
+        cloud.A.signInWithPopup(cloud.auth, new cloud.A.GoogleAuthProvider())
+          .catch(err => setStatus(err.code === 'auth/popup-closed-by-user' ? 'Sign-in cancelled' : 'Sign-in failed, check the Firebase setup'));
+      });
+      $('signout').addEventListener('click', () => cloud.A.signOut(cloud.auth));
+
+      setInterval(() => { save(); pushCloud(); }, 10000);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); pushCloud(); } });
+
+      render();
+      initCloud();
+    })();
+  </script>
+</body>
+</html>
